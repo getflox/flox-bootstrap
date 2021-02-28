@@ -9,7 +9,7 @@ license = "MIT"
 python = "^3.8"
 jinja2 = "^2.11"
 click = "^7.0"
-flox-core = {path = "../flox-core"}
+flox-core = {git = "https://github.com/getflox/flox-core.git"}
 stringcase = "^1.2"
 
 [tool.poetry.dev-dependencies]
