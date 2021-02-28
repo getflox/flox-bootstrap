@@ -6,11 +6,11 @@ authors = ["Michal Przytulski <michal@przytulski.pl>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.6"
-jinja2 = "^2.11.1"
+python = "^3.8"
+jinja2 = "^2.11"
 click = "^7.0"
 flox-core = {path = "../flox-core"}
-stringcase = "^1.2.0"
+stringcase = "^1.2"
 
 [tool.poetry.dev-dependencies]
 
