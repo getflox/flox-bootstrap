@@ -6,10 +6,10 @@ authors = ["Michal Przytulski <michal@przytulski.pl>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.6.2"
 jinja2 = "^2.11"
 click = "^7.0"
-flox-core = {git = "https://github.com/getflox/flox-core.git"}
+flox-core = "^0.1"
 stringcase = "^1.2"
 
 [tool.poetry.dev-dependencies]
