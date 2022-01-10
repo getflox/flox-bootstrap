@@ -8,9 +8,9 @@ def _built_in_templates():
     return []
 
 
-@click.command(help="Bootstrap project from template")
-@click.option("--bootstrap", multiple=True)
+@click.command(help="Bootstrap project from template", name="bootstrap")
+@click.argument("feature", nargs=-1)
 @click.option("--no-cache", is_flag=True, default=False)
 @click.pass_obj
-def bootstrap_command(flox: Flox, bootstrap: tuple, no_cache: bool):
-    enable(flox, bootstrap, no_cache)
+def bootstrap_command(flox: Flox, feature: tuple, no_cache: bool):
+    enable(flox, feature, no_cache)
