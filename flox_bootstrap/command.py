@@ -10,11 +10,11 @@ def _built_in_templates():
 
 
 @click.command(help="Bootstrap project from template", name="bootstrap")
-@click.argument("feature", nargs=-1)
+@click.argument("templates", nargs=-1)
 @click.option("--no-cache", is_flag=True, default=False)
 @click.pass_obj
-def bootstrap_command(flox: Flox, feature: tuple, no_cache: bool):
+def bootstrap_command(flox: Flox, templates: tuple, no_cache: bool):
     if not flox.initiated:
         raise FloxException("Unable to bootstrap not initiated project")
 
-    enable(flox, feature, no_cache)
+    enable(flox, templates, no_cache)

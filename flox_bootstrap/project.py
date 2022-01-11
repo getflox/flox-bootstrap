@@ -12,6 +12,8 @@ from floxcore.context import Flox
 from floxcore.remotes import universal_copy, generate_cache_hash
 from jinja2 import Environment, FileSystemLoader
 
+from loguru import logger
+
 
 def _reload_cache(flox: Flox, cache_dir: str):
     if isdir(cache_dir):
@@ -21,7 +23,7 @@ def _reload_cache(flox: Flox, cache_dir: str):
         universal_copy(flox, cache_dir, repository)
 
 
-def enable(flox: Flox, features: tuple, no_cache: bool, **kwargs):
+def enable(flox: Flox, templates: tuple, no_cache: bool, **kwargs):
     """Bootstraps project with given templates"""
     cache_dir = CONFIG_DIRS.get_in("user", "templates-cache")
 
@@ -33,13 +35,13 @@ def enable(flox: Flox, features: tuple, no_cache: bool, **kwargs):
         _reload_cache(flox, cache_dir)
 
     existing_paths = []
-    for template_name in features:
+    for template_name in templates:
         for repository in flox.settings.bootstrap.repositories:
             template_path = os.path.join(cache_dir, generate_cache_hash(repository), template_name)
             if os.path.isdir(template_path):
                 existing_paths.append(template_path)
 
-    non_existing = set(features) - set([Path(p).parts[-1] for p in existing_paths])
+    non_existing = set(templates) - set([Path(p).parts[-1] for p in existing_paths])
     for name in non_existing:
         warning(f'Bootstrap "{name}" does not exist')
 
@@ -51,6 +53,7 @@ def enable(flox: Flox, features: tuple, no_cache: bool, **kwargs):
     }
 
     for template_path in existing_paths:
+        logger.info(f"Bootstrap with template: {template_path}")
         env = Environment(loader=FileSystemLoader(template_path))
 
         for item in Path(template_path).glob("**/*"):

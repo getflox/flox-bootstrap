@@ -17,7 +17,7 @@ class BootstrapPlugin(Plugin):
 
     def handle_command_options_flox_project(self):
         options = (
-            ("--bootstrap", dict(help="Bootstrap project", multiple=True)),
+            ("--templates", dict(help="Bootstrap project using given templates", multiple=True)),
             ("--no-cache", dict(help="Reload bootstrap template repositories", is_flag=True, default=False))
         )
 
