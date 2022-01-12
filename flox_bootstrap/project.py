@@ -2,6 +2,7 @@ import importlib
 import os
 import re
 import shutil
+from collections import OrderedDict
 from os.path import isdir, isfile, join, abspath
 from pathlib import Path
 from shutil import copy2
@@ -21,6 +22,14 @@ def _reload_cache(flox: Flox, cache_dir: str):
 
     for repository in flox.settings.bootstrap.repositories:
         universal_copy(flox, cache_dir, repository)
+
+
+def load(path: str, module_name: str):
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    foo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(foo)
+
+    return foo
 
 
 def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
@@ -60,14 +69,23 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
         variables_file = abspath(join(template_path, "..", "variables.py"))
         if isfile(variables_file):
             logger.debug("Prompt for template variables")
-            spec = importlib.util.spec_from_file_location(f"{name}.variables", variables_file)
-            foo = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(foo)
-            for var in foo.VARIABLES:
+            module = load(variables_file, f"{name}.variables")
+            for var in module.VARIABLES:
                 kwargs[f"{name}_{var.name}"] = prompt(var)
 
+    generated = set()
     for template_path in existing_paths:
         name = Path(template_path).parts[-2]
+        hooks_file = abspath(join(template_path, "..", "hooks.py"))
+        module = OrderedDict()
+        if isfile(hooks_file):
+            logger.debug("Loading hooks")
+            module = load(hooks_file, f"{name}.hooks")
+
+        if "pre_bootstrap" in module.__dict__:
+            logger.debug(f"Calling pre_bootstrap hook for {name}")
+            module.pre_bootstrap()
+
         out.info(f"Bootstrapping project using template: {name}")
         env = Environment(loader=FileSystemLoader(template_path))
 
@@ -79,6 +97,8 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
             item_destination = os.path.join(flox.working_dir, relative_path)
             item_destination = re.sub(r"(<(.*?)>)", "{\\2}", item_destination).format(**kwargs)
 
+            generated.add(item_destination.replace(".j2", ""))
+
             if os.path.isdir(str(item)):
                 os.makedirs(item_destination, exist_ok=True)
             else:
@@ -87,3 +107,11 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
                 else:
                     template = env.get_template(relative_path)
                     template.stream(**kwargs).dump(item_destination.replace(".j2", ""))
+
+        if "post_bootstrap" in module.__dict__:
+            logger.debug(f"Calling post_bootstrap hook for {name}")
+            module.post_bootstrap()
+
+    return dict(
+        bootstrap_generated=generated
+    )
