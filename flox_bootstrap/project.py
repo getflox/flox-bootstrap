@@ -1,17 +1,17 @@
+import importlib
 import os
 import re
 import shutil
-from os.path import isdir
+from os.path import isdir, isfile, join, abspath
 from pathlib import Path
 from shutil import copy2
 
 import stringcase
 from floxcore import CONFIG_DIRS
-from floxcore.console import warning, error_box
+from floxcore.console import warning, error_box, prompt
 from floxcore.context import Flox
 from floxcore.remotes import universal_copy, generate_cache_hash
 from jinja2 import Environment, FileSystemLoader
-
 from loguru import logger
 
 
@@ -23,9 +23,10 @@ def _reload_cache(flox: Flox, cache_dir: str):
         universal_copy(flox, cache_dir, repository)
 
 
-def enable(flox: Flox, templates: tuple, no_cache: bool, **kwargs):
+def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
     """Bootstraps project with given templates"""
     cache_dir = CONFIG_DIRS.get_in("user", "templates-cache")
+    out = out or logger
 
     if not len(flox.settings.bootstrap.repositories):
         error_box("Repositories not configured. Run: flox configure --plugin=bootstrap")
@@ -37,30 +38,44 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, **kwargs):
     existing_paths = []
     for template_name in templates:
         for repository in flox.settings.bootstrap.repositories:
-            template_path = os.path.join(cache_dir, generate_cache_hash(repository), template_name)
+            template_path = os.path.join(cache_dir, generate_cache_hash(repository), template_name, "template")
             if os.path.isdir(template_path):
                 existing_paths.append(template_path)
 
-    non_existing = set(templates) - set([Path(p).parts[-1] for p in existing_paths])
+    non_existing = set(templates) - set([Path(p).parts[-2] for p in existing_paths])
     for name in non_existing:
         warning(f'Bootstrap "{name}" does not exist')
 
-    variables = {
+    kwargs.update({
         "project_name": flox.name,
         "project_name_hyphen": stringcase.spinalcase(flox.name),
         "project_name_underscore": stringcase.snakecase(flox.name),
         "project_name_camel_case": stringcase.pascalcase(flox.name),
-    }
+    })
 
     for template_path in existing_paths:
-        logger.info(f"Bootstrap with template: {template_path}")
+        name = Path(template_path).parts[-2]
+        variables_file = abspath(join(template_path, "..", "variables.py"))
+        if isfile(variables_file):
+            logger.debug("Prompt for template variables")
+            spec = importlib.util.spec_from_file_location(f"{name}.variables", variables_file)
+            foo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(foo)
+            for var in foo.VARIABLES:
+                kwargs[f"{name}_{var.name}"] = prompt(var)
+
+    for template_path in existing_paths:
+        name = Path(template_path).parts[-2]
+        out.info(f"Bootstrapping project using template: {name}")
         env = Environment(loader=FileSystemLoader(template_path))
+
+        logger.debug(f"Variables: {kwargs}")
 
         for item in Path(template_path).glob("**/*"):
             relative_path = str(item).replace(template_path, "").strip("/")
 
             item_destination = os.path.join(flox.working_dir, relative_path)
-            item_destination = re.sub(r"(<(.*?)>)", "{\\2}", item_destination).format(**variables)
+            item_destination = re.sub(r"(<(.*?)>)", "{\\2}", item_destination).format(**kwargs)
 
             if os.path.isdir(str(item)):
                 os.makedirs(item_destination, exist_ok=True)
@@ -69,4 +84,4 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, **kwargs):
                     copy2(str(item), item_destination)
                 else:
                     template = env.get_template(relative_path)
-                    template.stream(**variables).dump(item_destination.replace(".j2", ""))
+                    template.stream(**kwargs).dump(item_destination.replace(".j2", ""))
