@@ -53,6 +53,8 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
         "project_name_camel_case": stringcase.pascalcase(flox.name),
     })
 
+    kwargs.update({f"project_{k}": v for k, v in flox.meta.all().items()})
+
     for template_path in existing_paths:
         name = Path(template_path).parts[-2]
         variables_file = abspath(join(template_path, "..", "variables.py"))
