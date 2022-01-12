@@ -6,6 +6,7 @@ from floxcore.exceptions import FloxException
 
 from loguru import logger
 
+
 def _built_in_templates():
     return []
 

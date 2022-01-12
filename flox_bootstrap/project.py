@@ -82,30 +82,30 @@ def enable(flox: Flox, templates: tuple, no_cache: bool, out=None, **kwargs):
             logger.debug("Loading hooks")
             module = load(hooks_file, f"{name}.hooks")
 
+        template_files = {k: str(k).replace(template_path, "").strip("/") for k in Path(template_path).glob("**/*")}
+
         if "pre_bootstrap" in module.__dict__:
             logger.debug(f"Calling pre_bootstrap hook for {name}")
-            module.pre_bootstrap()
+            template_files = module.pre_bootstrap(template_files=template_files, features=templates, **kwargs)
 
         out.info(f"Bootstrapping project using template: {name}")
         env = Environment(loader=FileSystemLoader(template_path))
 
         logger.debug(f"Variables: {kwargs}")
 
-        for item in Path(template_path).glob("**/*"):
-            relative_path = str(item).replace(template_path, "").strip("/")
-
-            item_destination = os.path.join(flox.working_dir, relative_path)
+        for absolute, relative in template_files.items():
+            item_destination = os.path.join(flox.working_dir, relative)
             item_destination = re.sub(r"(<(.*?)>)", "{\\2}", item_destination).format(**kwargs)
 
             generated.add(item_destination.replace(".j2", ""))
 
-            if os.path.isdir(str(item)):
+            if os.path.isdir(str(absolute)):
                 os.makedirs(item_destination, exist_ok=True)
             else:
                 if not item_destination.endswith(".j2"):
-                    copy2(str(item), item_destination)
+                    copy2(str(absolute), item_destination)
                 else:
-                    template = env.get_template(relative_path)
+                    template = env.get_template(relative)
                     template.stream(**kwargs).dump(item_destination.replace(".j2", ""))
 
         if "post_bootstrap" in module.__dict__:
