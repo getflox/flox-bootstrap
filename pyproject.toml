@@ -13,6 +13,7 @@ flox-core = "^0.1"
 stringcase = "^1.2"
 
 [tool.poetry.dev-dependencies]
+bump2version = "^1.0.1"
 
 [tool.poetry.plugins."flox.plugin"]
 bootstrap = "flox_bootstrap:plugin"
