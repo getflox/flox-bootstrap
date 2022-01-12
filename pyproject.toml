@@ -9,7 +9,7 @@ license = "MIT"
 python = "^3.6.2"
 jinja2 = "^2.11"
 click = "^7.0"
-flox-core = "^0.1"
+flox-core = ">=0.2,<1.0.0"
 stringcase = "^1.2"
 
 [tool.poetry.dev-dependencies]
