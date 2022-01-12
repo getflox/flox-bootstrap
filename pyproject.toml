@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flox-bootstrap"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["Michal Przytulski <michal@przytulski.pl>"]
 license = "MIT"
