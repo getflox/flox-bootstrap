@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flox-bootstrap"
-version = "0.1.2"
+version = "0.1.3"
 description = "Bootstrap your project with predefined templates"
 homepage = "https://github.com/getflox/flox-bootstrap"
 authors = ["Michal Przytulski <michal@przytulski.pl>"]
